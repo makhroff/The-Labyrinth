@@ -37,33 +37,45 @@
             MoveDown,
             MoveLeft,
             MoveRight,
-            Interact
+            Interact,
+            UseBomb,
         }
 
         private static Random random = new Random();
 
-        private static int fieldDimensionY = 20;
+        private static int fieldDimensionY = 50;
         private static int fieldDimensionX = fieldDimensionY * 2;
 
         private static Vector2 player = new Vector2();
         private static Vector2 finish = new Vector2();
         private static char[,] field = new char[fieldDimensionX, fieldDimensionY];
+        private static double wallFrequency = 0.3;
 
         private const char playerChar = '@';
         private const char wallChar = 'O';
         private const char airChar = '.';
         private const char finishChar = 'F';
 
+        private static Dictionary<char, ConsoleColor> colorDictionary = new();
 
-
-        private static double wallFrequency = 0.3;
+        private static int bombExplosionRadious = 2;
+        private static int amountOfBoms = 3;
 
         private static bool gameIsRunning = true;
 
         static void Main(string[] args)
         {
+            SetupColorDictionary();
             GameLoop();
             Console.ReadLine();
+        }
+
+        static void SetupColorDictionary()
+        {
+            colorDictionary.Add(playerChar, ConsoleColor.Magenta);
+            colorDictionary.Add(wallChar, ConsoleColor.Yellow);
+            colorDictionary.Add(airChar, ConsoleColor.White);
+            colorDictionary.Add(finishChar, ConsoleColor.DarkBlue);
         }
 
         static void GameLoop()
@@ -75,6 +87,7 @@
             {
                 var input = TryToCatchGameInput();
                 ProcessCachedInput(input);
+                if (gameIsRunning) DrawField();
             }
         }
 
@@ -123,6 +136,9 @@
 
                     case ConsoleKey.Enter:
                         return GameInput.Interact;
+
+                    case ConsoleKey.F:
+                        return GameInput.UseBomb;
                 }
             }
 
@@ -142,12 +158,16 @@
 
                 field[player.x, player.y] = airChar;
                 player = newCoords;
-
-                DrawField();
             }
             else if(input == GameInput.Interact)
             {
-                TryToInteractInASquareShape(5);
+                TryToInteractInASquareShape(1);
+            }
+            else if(input == GameInput.UseBomb)
+            {
+                if(amountOfBoms == 0) return;
+                UseBomb();
+                amountOfBoms--;
             }
         }
 
@@ -187,6 +207,21 @@
             }
         }
 
+        static void UseBomb()
+        {
+            for (int y = (player.y - bombExplosionRadious); y < (player.y + bombExplosionRadious + 1); y++)
+            {
+                for (int x = (player.x - bombExplosionRadious); x < (player.x + bombExplosionRadious + 1); x++)
+                {
+                    var intermediateCoords = new Vector2(x, y);
+                    if (!AreCoordsWithinField(intermediateCoords)) continue;
+
+                    if (field[x, y] == wallChar)
+                        field[x, y] = airChar;
+                }
+            }
+        }
+
         static void DrawField()
         {
             Console.Clear();
@@ -197,18 +232,16 @@
             {
                 for (int x = 0; x < fieldDimensionX; x++)
                 {
+                    Console.ForegroundColor = colorDictionary[field[x, y]];
                     Console.Write(field[x, y]);
                 }
                 Console.WriteLine();
             }
-
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine();
-            Console.WriteLine("player y: " + player.y);
-            Console.WriteLine("player x: " + player.x);
-            Console.WriteLine();
-            Console.WriteLine("finish y:" + finish.y);
-            Console.WriteLine("finish x:" + finish.x);
+
+            Console.WriteLine($"\nAMOUNT OF BOMBS: {amountOfBoms}");
+            Console.WriteLine($"\n\nPress 'Enter' to interact (finish)");
+            Console.WriteLine($"\nPress 'F' to use BOMB!! \nIt will explode in radious of 2 (in shape of square)");
         }
         static char TryToCreateWall()
         {
