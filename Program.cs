@@ -22,6 +22,15 @@
             X = x;
             Y = y;
         }
+
+        public static bool operator >=(Vector2 a, Vector2 b)
+        {
+            return a.x >= b.x && a.y >= b.y;
+        }
+        public static bool operator <=(Vector2 a, Vector2 b)
+        {
+            return (a.x <= b.x && a.y <= b.y);
+        }
     }
 
     static class Program
@@ -32,6 +41,7 @@
             MoveDown,
             MoveLeft,
             MoveRight,
+            Interact
         }
 
         private static Random random = new Random();
@@ -98,16 +108,23 @@
                 switch (Console.ReadKey().Key)
                 {
                     case ConsoleKey.UpArrow:
+                    case ConsoleKey.W:
                         return GameInput.MoveUp;
                         
                     case ConsoleKey.DownArrow:
+                    case ConsoleKey.S:
                         return GameInput.MoveDown;
 
                     case ConsoleKey.LeftArrow:
+                    case ConsoleKey.A:
                         return GameInput.MoveLeft;
 
                     case ConsoleKey.RightArrow:
+                    case ConsoleKey.D:
                         return GameInput.MoveRight;
+
+                    case ConsoleKey.Enter:
+                        return GameInput.Interact;
                 }
             }
         }
@@ -120,33 +137,49 @@
             {
                 var newCoords = CalculateNewPlayerCoordinates(input);
 
-                if (!CoordsWithinField(newCoords)) return;
-                if (!CoordsLegal(newCoords)) return;
+                if (!AreCoordsWithinField(newCoords)) return;
+                if (!AreCoordsLegal(newCoords)) return;
 
                 field[player.x, player.y] = airChar;
                 player = newCoords;
 
                 DrawField();
             }
+            else if(input == GameInput.Interact)
+            {
+                TryToInteractInASquareShape(5);
+                DrawField();
+            }
         }
 
-
-        static bool CoordsWithinField(Vector2 coords)
+        static bool AreCoordsWithinField(Vector2 coords)
         {
-            if ((-1, coords.y) == (coords.x, coords.y)) return false;
-            if ((coords.x, -1) == (coords.x, coords.y)) return false;
+            if (new Vector2(-1, -1) >= coords) return false;
 
-            if ((fieldDimensionX, coords.y) == (coords.x, coords.y)) return false;
-            if ((coords.x, fieldDimensionY) == (coords.x, coords.y)) return false;
+            if (new Vector2(fieldDimensionX, fieldDimensionY) <= coords) return false;
 
             return true;
         }
-        static bool CoordsLegal(Vector2 coords) => GetCharFromField(coords) switch
+        static bool AreCoordsLegal(Vector2 coords) => GetCharFromField(coords) switch
         {
             wallChar => false,
             finishChar => false,
             _ => true
         };
+
+        static void TryToInteractInASquareShape(int radious)
+        {
+            for(int y = (player.y - radious); y < (player.y + radious * 2 + 1); y++)
+            {
+                for (int x = (player.x - radious); x < (player.x + radious + 1); x++)
+                {
+                    var intermediateCoords = new Vector2(x, y);
+                    if(!AreCoordsWithinField(intermediateCoords)) continue;
+
+                    if (field[x, y] != playerChar) field[x, y] = 'P';
+                }
+            }
+        }
 
         static void DrawField()
         {
