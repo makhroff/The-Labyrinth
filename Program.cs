@@ -23,14 +23,9 @@
             Y = y;
         }
 
-        public static bool operator >=(Vector2 a, Vector2 b)
-        {
-            return a.x >= b.x && a.y >= b.y;
-        }
-        public static bool operator <=(Vector2 a, Vector2 b)
-        {
-            return (a.x <= b.x && a.y <= b.y);
-        }
+        public static bool operator >=(Vector2 a, Vector2 b) => a.x >= b.x && a.y >= b.y;
+
+        public static bool operator <=(Vector2 a, Vector2 b) => a.x <= b.x && a.y <= b.y;
     }
 
     static class Program
@@ -160,6 +155,7 @@
 
             return true;
         }
+
         static bool AreCoordsLegal(Vector2 coords) => GetCharFromField(coords) switch
         {
             wallChar => false,
