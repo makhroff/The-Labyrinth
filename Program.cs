@@ -2,25 +2,25 @@
 {
     public class Vector2
     {
-        public int y;
         public int x;
+        public int y;
 
         public Vector2()
         {
-            y = 0;
             x = 0;
+            y = 0;
         }
 
         public Vector2(int x, int y)
         {
-            this.y = y;
             this.x = x;
+            this.y = y;
         }
 
         public void Deconstruct(out int X, out int Y)
         {
-            Y = y;
             X = x;
+            Y = y;
         }
     }
 
@@ -36,12 +36,12 @@
 
         private static Random random = new Random();
 
-        private static int fieldDimensionX = 20;
-        private static int fieldDimensionY = fieldDimensionX * 2;
+        private static int fieldDimensionY = 20;
+        private static int fieldDimensionX = fieldDimensionY * 2;
 
         private static Vector2 player = new Vector2();
         private static Vector2 finish = new Vector2();
-        private static char[,] field = new char[fieldDimensionY, fieldDimensionX];
+        private static char[,] field = new char[fieldDimensionX, fieldDimensionY];
 
         private const char playerChar = '@';
         private const char wallChar = 'O';
@@ -64,7 +64,6 @@
             DrawField();
             while (isGameRunning)
             {
-                //MovePlayer();
                 var input = TryToCatchGameInput();
                 ProcessCachedInput(input);
             }
@@ -80,11 +79,11 @@
         {
             Console.Clear();
 
-            for (int i = 0; i < fieldDimensionX; i++)
+            for (int y = 0; y < fieldDimensionY; y++)
             {
-                for (int j = 0; j < fieldDimensionY; j++)
+                for (int x = 0; x < fieldDimensionX; x++)
                 {
-                    field[j, i] = TryToCreateWall();
+                    field[x, y] = TryToCreateWall();
                 }
             }
 
@@ -121,8 +120,6 @@
             {
                 var newCoords = CalculateNewPlayerCoordinates(input);
 
-                Console.WriteLine(newCoords.x + " " + newCoords.y);
-
                 if (!CoordsWithinField(newCoords)) return;
                 if (!CoordsLegal(newCoords)) return;
 
@@ -133,26 +130,17 @@
             }
         }
 
-        static Vector2 CalculateNewPlayerCoordinates(GameInput input) => input switch
-        {
-            GameInput.MoveUp => new(player.x, player.y - 1),
-            GameInput.MoveDown => new(player.x, player.y + 1),
-            GameInput.MoveLeft => new(player.x - 1, player.y),
-            GameInput.MoveRight => new(player.x + 1, player.y),
-            _ => throw new NotImplementedException("No correct format of player movement found.")
-        };
 
         static bool CoordsWithinField(Vector2 coords)
         {
             if ((-1, coords.y) == (coords.x, coords.y)) return false;
             if ((coords.x, -1) == (coords.x, coords.y)) return false;
 
-            if ((fieldDimensionY, coords.y) == (coords.x, coords.y)) return false;
-            if ((coords.x, fieldDimensionX) == (coords.x, coords.y)) return false;
+            if ((fieldDimensionX, coords.y) == (coords.x, coords.y)) return false;
+            if ((coords.x, fieldDimensionY) == (coords.x, coords.y)) return false;
 
             return true;
         }
-
         static bool CoordsLegal(Vector2 coords) => GetCharFromField(coords) switch
         {
             wallChar => false,
@@ -160,23 +148,22 @@
             _ => true
         };
 
-        static char GetCharFromField(Vector2 coords) => field[coords.x, coords.y];
-
         static void DrawField()
         {
             Console.Clear();
 
             field[player.x, player.y] = playerChar;
 
-            for (int i = 0; i < fieldDimensionX; i++)
+            for (int y = 0; y < fieldDimensionY; y++)
             {
-                for (int j = 0; j < fieldDimensionY; j++)
+                for (int x = 0; x < fieldDimensionX; x++)
                 {
-                    Console.Write(field[j, i]);
+                    Console.Write(field[x, y]);
                 }
                 Console.WriteLine();
             }
 
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine();
             Console.WriteLine("player y: " + player.y);
             Console.WriteLine("player x: " + player.x);
@@ -193,18 +180,31 @@
             return airChar;
         }
 
+
         static void Win()
         {
             isGameRunning = false;
             Console.Clear();
             Console.WriteLine("YOU WIN!");
         }
+
+
+
         static Vector2 GetRandomPosition()
         {
             Vector2 position = new Vector2();
-            position.x = random.Next(0, fieldDimensionY);
-            position.y = random.Next(0, fieldDimensionX);
+            position.x = random.Next(0, fieldDimensionX);
+            position.y = random.Next(0, fieldDimensionY);
             return position;
         }
+        static Vector2 CalculateNewPlayerCoordinates(GameInput input) => input switch
+        {
+            GameInput.MoveUp => new(player.x, player.y - 1),
+            GameInput.MoveDown => new(player.x, player.y + 1),
+            GameInput.MoveLeft => new(player.x - 1, player.y),
+            GameInput.MoveRight => new(player.x + 1, player.y),
+            _ => throw new NotImplementedException("No correct format of player movement found.")
+        };
+        static char GetCharFromField(Vector2 coords) => field[coords.x, coords.y];
     }
 }
