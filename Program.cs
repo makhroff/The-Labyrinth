@@ -149,9 +149,11 @@
 
         static bool AreCoordsWithinField(Vector2 coords)
         {
-            if (new Vector2(-1, -1) >= coords) return false;
+            if (new Vector2(-1, coords.y) >= coords) return false;
+            if (new Vector2(coords.x, -1) >= coords) return false;
 
-            if (new Vector2(fieldDimensionX, fieldDimensionY) <= coords) return false;
+            if (new Vector2(fieldDimensionX, coords.y) <= coords) return false;
+            if (new Vector2(coords.x, fieldDimensionY) <= coords) return false;
 
             return true;
         }
@@ -165,7 +167,7 @@
 
         static void TryToInteractInASquareShape(int radious)
         {
-            for(int y = (player.y - radious); y < (player.y + radious * 2 + 1); y++)
+            for(int y = (player.y - radious); y < (player.y + radious + 1); y++)
             {
                 for (int x = (player.x - radious); x < (player.x + radious + 1); x++)
                 {
