@@ -32,6 +32,7 @@
     {
         public enum GameInput
         {
+            Null,
             MoveUp,
             MoveDown,
             MoveLeft,
@@ -50,16 +51,19 @@
 
         private const char playerChar = '@';
         private const char wallChar = 'O';
-        private const char airChar = ' ';
+        private const char airChar = '.';
         private const char finishChar = 'F';
+
+
 
         private static double wallFrequency = 0.3;
 
-        private static bool isGameRunning = true;
+        private static bool gameIsRunning = true;
 
         static void Main(string[] args)
         {
             GameLoop();
+            Console.ReadLine();
         }
 
         static void GameLoop()
@@ -67,12 +71,11 @@
             InitPositions();
             InitField();
             DrawField();
-            while (isGameRunning)
+            while (gameIsRunning)
             {
                 var input = TryToCatchGameInput();
                 ProcessCachedInput(input);
             }
-            Console.ReadKey();
         }
 
         static void InitPositions()
@@ -98,7 +101,7 @@
 
         static GameInput TryToCatchGameInput()
         {
-            while (true)
+            while (gameIsRunning)
             {
                 switch (Console.ReadKey().Key)
                 {
@@ -122,6 +125,8 @@
                         return GameInput.Interact;
                 }
             }
+
+            return GameInput.Null;
         }
 
         static void ProcessCachedInput(GameInput input)
@@ -143,7 +148,6 @@
             else if(input == GameInput.Interact)
             {
                 TryToInteractInASquareShape(5);
-                DrawField();
             }
         }
 
@@ -174,7 +178,11 @@
                     var intermediateCoords = new Vector2(x, y);
                     if(!AreCoordsWithinField(intermediateCoords)) continue;
 
-                    if (field[x, y] != playerChar) field[x, y] = 'P';
+                    if (field[x, y] == finishChar)
+                    {
+                        Win();
+                        break;
+                    }
                 }
             }
         }
@@ -214,7 +222,7 @@
 
         static void Win()
         {
-            isGameRunning = false;
+            gameIsRunning = false;
             Console.Clear();
             Console.WriteLine("YOU WIN!");
         }
