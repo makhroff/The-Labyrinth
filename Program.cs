@@ -46,9 +46,10 @@
         private static int fieldDimensionY = 50;
         private static int fieldDimensionX = fieldDimensionY * 2;
 
-        private static Vector2 player = new Vector2();
+        private static Vector2 playerPos = new Vector2();
         private static Vector2 playerOldPos = new Vector2();
-        private static Vector2 finish = new Vector2();
+        private static Vector2 finishPos = new Vector2();
+        private static Vector2 keyPos = new Vector2();
 
         private static char[,] field = new char[fieldDimensionX, fieldDimensionY];
         private static double wallFrequency = 0.3;
@@ -57,30 +58,39 @@
         private const char wallChar = 'O';
         private const char airChar = '.';
         private const char finishChar = 'F';
+        private const char keyChar = 'K';
 
         private static Dictionary<char, ConsoleColor> colorDictionary = new();
 
         private static int bombExplosionRadious = 2;
         private static int amountOfBoms = 3;
 
+        private static int amountOfKeysToCollect = 5;
+        private static int keysCollected = 0;
+
         private static bool gameIsRunning = true;
 
         static void Main(string[] args)
         {
-            Console.SetBufferSize(Console.WindowWidth, Console.WindowWidth);
-            Console.CursorVisible = false;
-
+            SetupConsoleParams();
             SetupColorDictionary();
+
             GameLoop();
             Console.ReadLine();
         }
 
+        static void SetupConsoleParams()
+        {
+            Console.SetBufferSize(Console.WindowWidth, Console.WindowWidth);
+            Console.CursorVisible = false;
+        }
         static void SetupColorDictionary()
         {
             colorDictionary.Add(playerChar, ConsoleColor.Magenta);
             colorDictionary.Add(wallChar, ConsoleColor.Yellow);
             colorDictionary.Add(airChar, ConsoleColor.White);
             colorDictionary.Add(finishChar, ConsoleColor.DarkBlue);
+            colorDictionary.Add(keyChar, ConsoleColor.DarkGreen);
         }
 
         static void GameLoop()
@@ -99,10 +109,14 @@
 
         static void InitPositions()
         {
-            player = GetRandomPosition();
-            playerOldPos = player;
-            finish = GetRandomPosition();
+            playerPos = GetRandomPosition();
+            playerOldPos = playerPos;
+            finishPos = GetRandomPosition();
+            keyPos = GetRandomPosition();
+
+            if(keyPos == finishPos || keyPos == playerPos) keyPos = GetRandomPosition();
         }
+
         static void InitField()
         {
             Console.Clear();
@@ -115,8 +129,20 @@
                 }
             }
 
-            field[player.x, player.y] = playerChar;
-            field[finish.x, finish.y] = finishChar;
+            field[playerPos.x, playerPos.y] = playerChar;
+            field[finishPos.x, finishPos.y] = finishChar;
+            field[keyPos.x, keyPos.y] = keyChar;
+        }
+
+        static void GenerateNewKey()
+        {
+            keyPos = GetRandomPosition();
+            if (keyPos == finishPos || keyPos == playerPos) keyPos = GetRandomPosition();
+
+            Console.ForegroundColor = colorDictionary[keyChar];
+            Console.SetCursorPosition(keyPos.x, keyPos.y);
+            Console.Write(keyChar);
+            field[keyPos.x, keyPos.y] = keyChar;
         }
 
         static GameInput TryToCatchGameInput()
@@ -163,9 +189,9 @@
                 if (!AreCoordsWithinField(newCoords)) return;
                 if (!AreCoordsLegal(newCoords)) return;
 
-                field[player.x, player.y] = airChar;
-                playerOldPos = player;
-                player = newCoords;
+                field[playerPos.x, playerPos.y] = airChar;
+                playerOldPos = playerPos;
+                playerPos = newCoords;
             }
             else if(input == GameInput.Interact)
             {
@@ -196,21 +222,35 @@
         {
             wallChar => false,
             finishChar => false,
+            keyChar => false,
             _ => true
         };
 
         static void TryToInteractInASquareShape(int radious)
         {
-            for(int y = (player.y - radious); y < (player.y + radious + 1); y++)
+            for(int y = (playerPos.y - radious); y < (playerPos.y + radious + 1); y++)
             {
-                for (int x = (player.x - radious); x < (player.x + radious + 1); x++)
+                for (int x = (playerPos.x - radious); x < (playerPos.x + radious + 1); x++)
                 {
                     var intermediateCoords = new Vector2(x, y);
                     if(!AreCoordsWithinField(intermediateCoords)) continue;
 
                     if (field[x, y] == finishChar)
                     {
+                        if (keysCollected != amountOfKeysToCollect) continue;
+
                         Win();
+                        break;
+                    }
+                    if(field[x, y] == keyChar)
+                    {
+                        field[x, y] = airChar;
+                        keysCollected++;
+
+                        if(amountOfKeysToCollect > keysCollected) GenerateNewKey();
+
+                        DrawField();
+
                         break;
                     }
                 }
@@ -219,9 +259,9 @@
 
         static void UseBomb()
         {
-            for (int y = (player.y - bombExplosionRadious); y < (player.y + bombExplosionRadious + 1); y++)
+            for (int y = (playerPos.y - bombExplosionRadious); y < (playerPos.y + bombExplosionRadious + 1); y++)
             {
-                for (int x = (player.x - bombExplosionRadious); x < (player.x + bombExplosionRadious + 1); x++)
+                for (int x = (playerPos.x - bombExplosionRadious); x < (playerPos.x + bombExplosionRadious + 1); x++)
                 {
                     var intermediateCoords = new Vector2(x, y);
                     if (!AreCoordsWithinField(intermediateCoords)) continue;
@@ -235,7 +275,7 @@
         static void DrawField()
         {
             Console.Clear();
-            field[player.x, player.y] = playerChar;
+            field[playerPos.x, playerPos.y] = playerChar;
 
             for (int y = 0; y < fieldDimensionY; y++)
             {
@@ -246,17 +286,22 @@
                 }
                 Console.WriteLine();
             }
-            Console.ForegroundColor = ConsoleColor.Green;
 
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"\nAMOUNT OF BOMBS: {amountOfBoms}");
-            Console.WriteLine($"\n\nPress 'Enter' to interact (finish)");
+
+            if(keysCollected == amountOfKeysToCollect) Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine($"\nAMOUNT OF KEYS COLLECTED: {keysCollected} / {amountOfKeysToCollect}");
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"\n\nPress 'Enter' to interact (finishPos)");
             Console.WriteLine($"\nPress 'F' to use BOMB!! \nIt will explode in radious of 2 (in shape of square)");
         }
 
         static void DrawPlayer()
         {
             Console.ForegroundColor = colorDictionary[playerChar];
-            Console.SetCursorPosition(player.x, player.y);
+            Console.SetCursorPosition(playerPos.x, playerPos.y);
             Console.Write(playerChar);
 
             Console.ForegroundColor = colorDictionary[airChar];
@@ -292,11 +337,11 @@
         }
         static Vector2 CalculateNewPlayerCoordinates(GameInput input) => input switch
         {
-            GameInput.MoveUp => new(player.x, player.y - 1),
-            GameInput.MoveDown => new(player.x, player.y + 1),
-            GameInput.MoveLeft => new(player.x - 1, player.y),
-            GameInput.MoveRight => new(player.x + 1, player.y),
-            _ => throw new NotImplementedException("No correct format of player movement found.")
+            GameInput.MoveUp => new(playerPos.x, playerPos.y - 1),
+            GameInput.MoveDown => new(playerPos.x, playerPos.y + 1),
+            GameInput.MoveLeft => new(playerPos.x - 1, playerPos.y),
+            GameInput.MoveRight => new(playerPos.x + 1, playerPos.y),
+            _ => throw new NotImplementedException("No correct format of playerPos movement found.")
         };
         static char GetCharFromField(Vector2 coords) => field[coords.x, coords.y];
     }
