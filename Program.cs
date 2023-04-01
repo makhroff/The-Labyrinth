@@ -47,7 +47,9 @@
         private static int fieldDimensionX = fieldDimensionY * 2;
 
         private static Vector2 player = new Vector2();
+        private static Vector2 playerOldPos = new Vector2();
         private static Vector2 finish = new Vector2();
+
         private static char[,] field = new char[fieldDimensionX, fieldDimensionY];
         private static double wallFrequency = 0.3;
 
@@ -65,6 +67,9 @@
 
         static void Main(string[] args)
         {
+            Console.SetBufferSize(Console.WindowWidth, Console.WindowWidth);
+            Console.CursorVisible = false;
+
             SetupColorDictionary();
             GameLoop();
             Console.ReadLine();
@@ -83,17 +88,19 @@
             InitPositions();
             InitField();
             DrawField();
+
             while (gameIsRunning)
             {
                 var input = TryToCatchGameInput();
                 ProcessCachedInput(input);
-                if (gameIsRunning) DrawField();
+                if (gameIsRunning) DrawPlayer();
             }
         }
 
         static void InitPositions()
         {
             player = GetRandomPosition();
+            playerOldPos = player;
             finish = GetRandomPosition();
         }
         static void InitField()
@@ -157,6 +164,7 @@
                 if (!AreCoordsLegal(newCoords)) return;
 
                 field[player.x, player.y] = airChar;
+                playerOldPos = player;
                 player = newCoords;
             }
             else if(input == GameInput.Interact)
@@ -168,6 +176,8 @@
                 if(amountOfBoms == 0) return;
                 UseBomb();
                 amountOfBoms--;
+
+                DrawField();
             }
         }
 
@@ -225,7 +235,6 @@
         static void DrawField()
         {
             Console.Clear();
-
             field[player.x, player.y] = playerChar;
 
             for (int y = 0; y < fieldDimensionY; y++)
@@ -243,6 +252,18 @@
             Console.WriteLine($"\n\nPress 'Enter' to interact (finish)");
             Console.WriteLine($"\nPress 'F' to use BOMB!! \nIt will explode in radious of 2 (in shape of square)");
         }
+
+        static void DrawPlayer()
+        {
+            Console.ForegroundColor = colorDictionary[playerChar];
+            Console.SetCursorPosition(player.x, player.y);
+            Console.Write(playerChar);
+
+            Console.ForegroundColor = colorDictionary[airChar];
+            Console.SetCursorPosition(playerOldPos.x, playerOldPos.y);
+            Console.Write(airChar);
+        }
+
         static char TryToCreateWall()
         {
             if (random.NextDouble() <= wallFrequency)
