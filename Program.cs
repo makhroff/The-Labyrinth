@@ -99,11 +99,13 @@
             InitStartPositions();
             InitField();
             DrawField();
+            UpdateUI();
 
             while (gameIsRunning)
             {
                 var input = TryToCatchGameInput();
                 ProcessCachedInput(input);
+                if (gameIsRunning) UpdateUI();
             }
         }
 
@@ -283,11 +285,15 @@
                 }
                 Console.WriteLine();
             }
+        }
 
+        static void UpdateUI()
+        {
+            Console.SetCursorPosition(0, fieldDimensionY + 1);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"\nAMOUNT OF BOMBS: {amountOfBoms}");
 
-            if(keysCollected == amountOfKeysToCollect) Console.ForegroundColor = ConsoleColor.DarkYellow;
+            if (keysCollected == amountOfKeysToCollect) Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine($"\nAMOUNT OF KEYS COLLECTED: {keysCollected} / {amountOfKeysToCollect}");
 
             Console.ForegroundColor = ConsoleColor.Green;
