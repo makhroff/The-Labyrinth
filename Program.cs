@@ -96,7 +96,7 @@
 
         static void GameLoop()
         {
-            InitPositions();
+            InitStartPositions();
             InitField();
             DrawField();
 
@@ -104,11 +104,10 @@
             {
                 var input = TryToCatchGameInput();
                 ProcessCachedInput(input);
-                if (gameIsRunning) DrawPlayer();
             }
         }
 
-        static void InitPositions()
+        static void InitStartPositions()
         {
             playerPos = GetRandomPosition();
             playerOldPos = playerPos;
@@ -140,11 +139,9 @@
             keyPos = GetRandomPosition();
             if (keyPos == finishPos || keyPos == playerPos) keyPos = GetRandomPosition();
 
-            Console.ForegroundColor = colorDictionary[keyChar];
-            Console.SetCursorPosition(keyPos.x, keyPos.y);
-            Console.Write(keyChar);
-
             field[keyPos.x, keyPos.y] = keyChar;
+            
+            UpdateField(keyPos);
         }
 
         static GameInput TryToCatchGameInput()
@@ -154,25 +151,21 @@
                 switch (Console.ReadKey().Key)
                 {
                     case ConsoleKey.UpArrow:
-                    case ConsoleKey.W:
                         return GameInput.MoveUp;
                         
                     case ConsoleKey.DownArrow:
-                    case ConsoleKey.S:
                         return GameInput.MoveDown;
 
                     case ConsoleKey.LeftArrow:
-                    case ConsoleKey.A:
                         return GameInput.MoveLeft;
 
                     case ConsoleKey.RightArrow:
-                    case ConsoleKey.D:
                         return GameInput.MoveRight;
 
                     case ConsoleKey.Enter:
                         return GameInput.Interact;
 
-                    case ConsoleKey.F:
+                    case ConsoleKey.Spacebar:
                         return GameInput.UseBomb;
                 }
             }
@@ -194,6 +187,8 @@
                 field[playerPos.x, playerPos.y] = airChar;
                 playerOldPos = playerPos;
                 playerPos = newCoords;
+
+                UpdatePlayerOnField();
             }
             else if(input == GameInput.Interact)
             {
@@ -203,8 +198,6 @@
             {
                 if(amountOfBoms == 0) return;
                 UseBomb();
-
-                DrawField();
             }
         }
 
@@ -221,10 +214,8 @@
 
         static bool AreCoordsLegal(Vector2 coords) => GetCharFromField(coords) switch
         {
-            wallChar => false,
-            finishChar => false,
-            keyChar => false,
-            _ => true
+            airChar => true,
+            _ => false
         };
 
         static void TryToInteractInASquareShape(int radious)
@@ -246,11 +237,11 @@
                     if(field[x, y] == keyChar)
                     {
                         field[x, y] = airChar;
+                        UpdateField(intermediateCoords);
+
                         keysCollected++;
 
                         if(amountOfKeysToCollect > keysCollected) GenerateNewKey();
-
-                        DrawField();
 
                         break;
                     }
@@ -268,7 +259,10 @@
                     if (!AreCoordsWithinField(intermediateCoords)) continue;
 
                     if (field[x, y] == wallChar)
+                    {
                         field[x, y] = airChar;
+                        UpdateField(intermediateCoords);
+                    }
                 }
             }
 
@@ -297,11 +291,18 @@
             Console.WriteLine($"\nAMOUNT OF KEYS COLLECTED: {keysCollected} / {amountOfKeysToCollect}");
 
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"\n\nPress 'Enter' to interact (finishPos)");
-            Console.WriteLine($"\nPress 'F' to use BOMB!! \nIt will explode in radious of 2 (in shape of square)");
+            Console.WriteLine($"\nPress 'Enter' to interact (finishPos)");
+            Console.WriteLine($"Press the 'Spacebar' to use the BOMB!! \nIt will explode in radious of 2 (in shape of a square)");
         }
 
-        static void DrawPlayer()
+        static void UpdateField(Vector2 coords)
+        {
+            Console.ForegroundColor = colorDictionary[field[coords.x, coords.y]];
+            Console.SetCursorPosition(coords.x, coords.y);
+            Console.Write(field[coords.x, coords.y]);
+        }
+
+        static void UpdatePlayerOnField()
         {
             Console.ForegroundColor = colorDictionary[playerChar];
             Console.SetCursorPosition(playerPos.x, playerPos.y);
