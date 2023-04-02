@@ -79,6 +79,7 @@
             Console.ReadLine();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "This game is only for Windows users")]
         static void SetupConsoleParams()
         {
             Console.SetBufferSize(Console.WindowWidth, Console.WindowWidth);
@@ -142,6 +143,7 @@
             Console.ForegroundColor = colorDictionary[keyChar];
             Console.SetCursorPosition(keyPos.x, keyPos.y);
             Console.Write(keyChar);
+
             field[keyPos.x, keyPos.y] = keyChar;
         }
 
@@ -201,7 +203,6 @@
             {
                 if(amountOfBoms == 0) return;
                 UseBomb();
-                amountOfBoms--;
 
                 DrawField();
             }
@@ -270,6 +271,8 @@
                         field[x, y] = airChar;
                 }
             }
+
+            amountOfBoms--;
         }
 
         static void DrawField()
@@ -341,7 +344,7 @@
             GameInput.MoveDown => new(playerPos.x, playerPos.y + 1),
             GameInput.MoveLeft => new(playerPos.x - 1, playerPos.y),
             GameInput.MoveRight => new(playerPos.x + 1, playerPos.y),
-            _ => throw new NotImplementedException("No correct format of playerPos movement found.")
+            _ => throw new NotImplementedException("No correct format of player movement found.")
         };
         static char GetCharFromField(Vector2 coords) => field[coords.x, coords.y];
     }
