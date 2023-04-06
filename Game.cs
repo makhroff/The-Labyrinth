@@ -15,7 +15,7 @@
     {
         private Random random = new();
 
-        private const int fieldDimensionY = 50;
+        private const int fieldDimensionY = 35;
         private const int fieldDimensionX = fieldDimensionY * 2;
 
         private LabyrinthCoords playerPos = new();
@@ -219,7 +219,6 @@
                     }
                 }
             }
-
             amountOfBoms--;
         }
 
@@ -245,7 +244,7 @@
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"\nAMOUNT OF BOMBS: {amountOfBoms}");
 
-            if (amountOfCollectedKeys == amountOfKeysToCollect) Console.ForegroundColor = ConsoleColor.DarkYellow;
+            if (amountOfCollectedKeys == amountOfKeysToCollect) Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine($"\nAMOUNT OF KEYS COLLECTED: {amountOfCollectedKeys} / {amountOfKeysToCollect}");
 
             Console.ForegroundColor = ConsoleColor.Green;
@@ -280,8 +279,7 @@
             }
             return airChar;
         }
-
-
+        
         private void TryToWin()
         {
             if(!allKeysCollected) return;
@@ -296,8 +294,8 @@
         {
             LabyrinthCoords position = new LabyrinthCoords
             {
-                x = random.Next(0, fieldDimensionX),
-                y = random.Next(0, fieldDimensionY)
+                x = random.Next(0, fieldDimensionX - 1),
+                y = random.Next(0, fieldDimensionY - 1)
             };
 
             if (usedCoordsList.Contains(position))
