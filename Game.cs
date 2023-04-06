@@ -2,15 +2,15 @@
 {
     public class Game
     {
-        private Random random = new Random();
+        private Random random = new();
 
         private const int fieldDimensionY = 50;
         private const int fieldDimensionX = fieldDimensionY * 2;
 
-        private Vector2 playerPos = new Vector2();
-        private Vector2 playerOldPos = new Vector2();
-        private Vector2 finishPos = new Vector2();
-        private Vector2 keyPos = new Vector2();
+        private LabyrinthCoords playerPos = new();
+        private LabyrinthCoords playerOldPos = new();
+        private LabyrinthCoords finishPos = new();
+        private LabyrinthCoords keyPos = new();
 
         private char[,] field = new char[fieldDimensionX, fieldDimensionY];
         private double wallFrequency = 0.3;
@@ -21,20 +21,38 @@
         private const char finishChar = 'F';
         private const char keyChar = 'K';
 
-        private Dictionary<char, ConsoleColor> colorDictionary = new();
+        private readonly Dictionary<char, ConsoleColor> colorDictionary = new()
+        {
+            {playerChar, ConsoleColor.Magenta},
+            {wallChar, ConsoleColor.Yellow},
+            {airChar, ConsoleColor.White},
+            {finishChar, ConsoleColor.Cyan},
+            {keyChar, ConsoleColor.Green}
+        };
 
-        private int bombExplosionRadious = 2;
+        private readonly Dictionary<ConsoleKey, GameInput> inputDictionary = new()
+        {
+            { ConsoleKey.UpArrow, GameInput.MoveUp},
+            { ConsoleKey.LeftArrow, GameInput.MoveLeft},
+            { ConsoleKey.DownArrow, GameInput.MoveDown},
+            { ConsoleKey.RightArrow, GameInput.MoveRight},
+            { ConsoleKey.Spacebar, GameInput.UseBomb},
+            { ConsoleKey.Enter, GameInput.Interact}
+        };
+
+        private const int interactRadious = 1;
+        private const int bombExplosionRadious = 2;
+        
         private int amountOfBoms = 5;
 
-        private int amountOfKeysToCollect = 5;
-        private int amountOfCollectedKeys = 0;
-        private bool areAllKeysCollected => amountOfCollectedKeys == amountOfKeysToCollect;
+        private const int amountOfKeysToCollect = 5;
+        private int amountOfCollectedKeys;
+        private bool allKeysCollected => amountOfCollectedKeys == amountOfKeysToCollect;
 
         private bool gameIsRunning = true;
 
         public void StartGameLoop()
         {
-            SetupColorDictionary();
             InitStartPositions();
             InitField();
             DrawField();
@@ -46,15 +64,6 @@
                 var input = CatchGameInput();
                 ProcessCachedInput(input);
             }
-        }
-
-        private void SetupColorDictionary()
-        {
-            colorDictionary.Add(playerChar, ConsoleColor.Magenta);
-            colorDictionary.Add(wallChar, ConsoleColor.Yellow);
-            colorDictionary.Add(airChar, ConsoleColor.White);
-            colorDictionary.Add(finishChar, ConsoleColor.DarkBlue);
-            colorDictionary.Add(keyChar, ConsoleColor.DarkGreen);
         }
 
         private void InitStartPositions()
@@ -94,16 +103,8 @@
             UpdateField(keyPos);
         }
 
-        private GameInput CatchGameInput() => Console.ReadKey().Key switch
-        {
-            ConsoleKey.UpArrow => GameInput.MoveUp,
-            ConsoleKey.DownArrow => GameInput.MoveDown,
-            ConsoleKey.RightArrow => GameInput.MoveRight,
-            ConsoleKey.LeftArrow => GameInput.MoveLeft,
-            ConsoleKey.Spacebar => GameInput.UseBomb,
-            ConsoleKey.Enter => GameInput.Interact,
-            _ => GameInput.Null
-        };
+        private GameInput CatchGameInput() =>
+            inputDictionary.TryGetValue(Console.ReadKey().Key, out var input) ? input : GameInput.Null;
 
         private void ProcessCachedInput(GameInput input)
         {
@@ -118,80 +119,85 @@
                 if (!AreCoordsLegal(newCoords))
                     return;
 
-                field[playerPos.x, playerPos.y] = airChar;
-                playerOldPos = playerPos;
-                playerPos = newCoords;
+                MovePlayer(newCoords);
 
                 UpdatePlayerOnField();
             }
             else switch (input)
             {
                 case GameInput.Interact:
-                    TryToInteractInASquareShape(1);
+                    TryToInteractInASquareShape();
                     break;
-                case GameInput.UseBomb when amountOfBoms == 0:
-                    return;
                 case GameInput.UseBomb:
-                    UseBomb();
+                    TryToUseBomb();
                     break;
             }
         }
 
-        private static bool AreCoordsWithinField(Vector2 coords)
+        private void MovePlayer(LabyrinthCoords newCoords)
         {
-            if (new Vector2(-1, coords.y) >= coords) return false;
-            if (new Vector2(coords.x, -1) >= coords) return false;
-
-            if (new Vector2(fieldDimensionX, coords.y) <= coords) return false;
-            if (new Vector2(coords.x, fieldDimensionY) <= coords) return false;
-
-            return true;
+            field[playerPos.x, playerPos.y] = airChar;
+            playerOldPos = playerPos;
+            playerPos = newCoords;
         }
 
-        private bool AreCoordsLegal(Vector2 coords) => GetCharFromField(coords) switch
+        private static bool AreCoordsWithinField(LabyrinthCoords coords)
         {
-            airChar => true,
-            _ => false
-        };
+            LabyrinthCoords minCoords = new LabyrinthCoords(-1, -1);
+            LabyrinthCoords maxCoords = new LabyrinthCoords(fieldDimensionX, fieldDimensionY);
 
-        private void TryToInteractInASquareShape(int radious)
+            bool isWithinField = coords > minCoords && coords < maxCoords;
+            return isWithinField;
+        }
+
+        private bool AreCoordsLegal(LabyrinthCoords coords) => GetCharFromField(coords) == airChar;
+
+        private void TryToInteractInASquareShape()
         {
-            for (int y = (playerPos.y - radious); y < (playerPos.y + radious + 1); y++)
+            for (int y = (playerPos.y - interactRadious); y < (playerPos.y + interactRadious + 1); y++)
             {
-                for (int x = (playerPos.x - radious); x < (playerPos.x + radious + 1); x++)
+                for (int x = (playerPos.x - interactRadious); x < (playerPos.x + interactRadious + 1); x++)
                 {
-                    var intermediateCoords = new Vector2(x, y);
+                    var intermediateCoords = new LabyrinthCoords(x, y);
 
                     if (!AreCoordsWithinField(intermediateCoords))
                         continue;
 
-                    if (field[x, y] == finishChar && areAllKeysCollected)
+                    switch (field[x, y])
                     {
-                        Win();
-                    }
-                    if (field[x, y] == keyChar)
-                    {
-                        field[x, y] = airChar;
-                        UpdateField(intermediateCoords);
-
-                        amountOfCollectedKeys++;
-
-                        if (amountOfKeysToCollect > amountOfCollectedKeys)
-                            GenerateNewKey();
-
-                        break;
+                        case finishChar:
+                            TryToWin();
+                            break;
+                        
+                        case keyChar:
+                            CollectKey(x, y, intermediateCoords);
+                            break;
                     }
                 }
             }
         }
 
-        private void UseBomb()
+        private void CollectKey(int x, int y, LabyrinthCoords intermediateCoords)
         {
+            field[x, y] = airChar;
+            UpdateField(intermediateCoords);
+
+            amountOfCollectedKeys++;
+
+            if (amountOfKeysToCollect > amountOfCollectedKeys)
+                GenerateNewKey();
+        }
+
+        private void TryToUseBomb()
+        {
+            if (amountOfBoms == 0)
+                return;
+
             for (int y = (playerPos.y - bombExplosionRadious); y < (playerPos.y + bombExplosionRadious + 1); y++)
             {
                 for (int x = (playerPos.x - bombExplosionRadious); x < (playerPos.x + bombExplosionRadious + 1); x++)
                 {
-                    var intermediateCoords = new Vector2(x, y);
+                    var intermediateCoords = new LabyrinthCoords(x, y);
                     if (!AreCoordsWithinField(intermediateCoords)) continue;
 
                     if (field[x, y] == wallChar)
@@ -232,10 +238,10 @@
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"\nPress 'Enter' to interact (finishPos)");
-            Console.WriteLine($"Press the 'Spacebar' to use the BOMB!! \nIt will explode in radious of 2 (in shape of a square)");
+            Console.WriteLine($"Press the 'Spacebar' to use the BOMB!! \nIt will explode in interactRadious of 2 (in shape of a square)");
         }
 
-        private void UpdateField(Vector2 coords)
+        private void UpdateField(LabyrinthCoords coords)
         {
             Console.ForegroundColor = colorDictionary[field[coords.x, coords.y]];
             Console.SetCursorPosition(coords.x, coords.y);
@@ -263,8 +269,10 @@
         }
 
 
-        private void Win()
+        private void TryToWin()
         {
+            if(!allKeysCollected) return;
+            
             gameIsRunning = false;
             Console.Clear();
             Console.WriteLine("YOU WIN!");
@@ -272,21 +280,24 @@
 
 
 
-        private Vector2 GetRandomPosition()
+        private LabyrinthCoords GetRandomPosition()
         {
-            Vector2 position = new Vector2();
-            position.x = random.Next(0, fieldDimensionX);
-            position.y = random.Next(0, fieldDimensionY);
+            LabyrinthCoords position = new LabyrinthCoords
+            {
+                x = random.Next(0, fieldDimensionX - 1),
+                y = random.Next(0, fieldDimensionY - 1)
+            };
+            
             return position;
         }
-        private Vector2 CalculateNewPlayerCoordinates(GameInput input) => input switch
+        private LabyrinthCoords CalculateNewPlayerCoordinates(GameInput input) => input switch
         {
-            GameInput.MoveUp => new Vector2(playerPos.x, playerPos.y - 1),
-            GameInput.MoveDown => new Vector2(playerPos.x, playerPos.y + 1),
-            GameInput.MoveLeft => new Vector2(playerPos.x - 1, playerPos.y),
-            GameInput.MoveRight => new Vector2(playerPos.x + 1, playerPos.y),
+            GameInput.MoveUp => new LabyrinthCoords(playerPos.x, playerPos.y - 1),
+            GameInput.MoveDown => new LabyrinthCoords(playerPos.x, playerPos.y + 1),
+            GameInput.MoveLeft => new LabyrinthCoords(playerPos.x - 1, playerPos.y),
+            GameInput.MoveRight => new LabyrinthCoords(playerPos.x + 1, playerPos.y),
             _ => throw new NotImplementedException("No correct format of player movement found.")
         };
-        private char GetCharFromField(Vector2 coords) => field[coords.x, coords.y];
+        private char GetCharFromField(LabyrinthCoords coords) => field[coords.x, coords.y];
     }
 }
