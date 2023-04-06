@@ -18,7 +18,6 @@
         static void Main(string[] args)
         {
             SetupConsoleParams();
-            game.SetupColorDictionary();
 
             game.StartGameLoop();
             Console.ReadLine();

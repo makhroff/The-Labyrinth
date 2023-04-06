@@ -32,27 +32,29 @@
 
         private bool gameIsRunning = true;
 
-        public void SetupColorDictionary()
-        {
-            colorDictionary.Add(playerChar, ConsoleColor.Magenta);
-            colorDictionary.Add(wallChar, ConsoleColor.Yellow);
-            colorDictionary.Add(airChar, ConsoleColor.White);
-            colorDictionary.Add(finishChar, ConsoleColor.DarkBlue);
-            colorDictionary.Add(keyChar, ConsoleColor.DarkGreen);
-        }
-
         public void StartGameLoop()
         {
+            SetupColorDictionary();
             InitStartPositions();
             InitField();
             DrawField();
 
             while (gameIsRunning)
             {
-                UpdateUI();
-                var input = TryToCatchGameInput();
+                UpdateUi();
+
+                var input = CatchGameInput();
                 ProcessCachedInput(input);
             }
+        }
+
+        private void SetupColorDictionary()
+        {
+            colorDictionary.Add(playerChar, ConsoleColor.Magenta);
+            colorDictionary.Add(wallChar, ConsoleColor.Yellow);
+            colorDictionary.Add(airChar, ConsoleColor.White);
+            colorDictionary.Add(finishChar, ConsoleColor.DarkBlue);
+            colorDictionary.Add(keyChar, ConsoleColor.DarkGreen);
         }
 
         private void InitStartPositions()
@@ -92,7 +94,7 @@
             UpdateField(keyPos);
         }
 
-        private GameInput TryToCatchGameInput() => Console.ReadKey().Key switch
+        private GameInput CatchGameInput() => Console.ReadKey().Key switch
         {
             ConsoleKey.UpArrow => GameInput.MoveUp,
             ConsoleKey.DownArrow => GameInput.MoveDown,
@@ -105,14 +107,16 @@
 
         private void ProcessCachedInput(GameInput input)
         {
-            bool playerIsMoving = input.IsMoving();
+            var playerIsMoving = input.IsMoving();
 
             if (playerIsMoving)
             {
                 var newCoords = CalculateNewPlayerCoordinates(input);
 
-                if (!AreCoordsWithinField(newCoords)) return;
-                if (!AreCoordsLegal(newCoords)) return;
+                if (!AreCoordsWithinField(newCoords))
+                    return;
+                if (!AreCoordsLegal(newCoords))
+                    return;
 
                 field[playerPos.x, playerPos.y] = airChar;
                 playerOldPos = playerPos;
@@ -120,18 +124,20 @@
 
                 UpdatePlayerOnField();
             }
-            else if (input == GameInput.Interact)
+            else switch (input)
             {
-                TryToInteractInASquareShape(1);
-            }
-            else if (input == GameInput.UseBomb)
-            {
-                if (amountOfBoms == 0) return;
-                UseBomb();
+                case GameInput.Interact:
+                    TryToInteractInASquareShape(1);
+                    break;
+                case GameInput.UseBomb when amountOfBoms == 0:
+                    return;
+                case GameInput.UseBomb:
+                    UseBomb();
+                    break;
             }
         }
 
-        private bool AreCoordsWithinField(Vector2 coords)
+        private static bool AreCoordsWithinField(Vector2 coords)
         {
             if (new Vector2(-1, coords.y) >= coords) return false;
             if (new Vector2(coords.x, -1) >= coords) return false;
@@ -215,7 +221,7 @@
             }
         }
 
-        private void UpdateUI()
+        private void UpdateUi()
         {
             Console.SetCursorPosition(0, fieldDimensionY + 1);
             Console.ForegroundColor = ConsoleColor.Green;
@@ -275,10 +281,10 @@
         }
         private Vector2 CalculateNewPlayerCoordinates(GameInput input) => input switch
         {
-            GameInput.MoveUp => new(playerPos.x, playerPos.y - 1),
-            GameInput.MoveDown => new(playerPos.x, playerPos.y + 1),
-            GameInput.MoveLeft => new(playerPos.x - 1, playerPos.y),
-            GameInput.MoveRight => new(playerPos.x + 1, playerPos.y),
+            GameInput.MoveUp => new Vector2(playerPos.x, playerPos.y - 1),
+            GameInput.MoveDown => new Vector2(playerPos.x, playerPos.y + 1),
+            GameInput.MoveLeft => new Vector2(playerPos.x - 1, playerPos.y),
+            GameInput.MoveRight => new Vector2(playerPos.x + 1, playerPos.y),
             _ => throw new NotImplementedException("No correct format of player movement found.")
         };
         private char GetCharFromField(Vector2 coords) => field[coords.x, coords.y];
