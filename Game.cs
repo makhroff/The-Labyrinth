@@ -25,12 +25,14 @@
 
         private char[,] field = new char[fieldDimensionX, fieldDimensionY];
         private double wallFrequency = 0.3;
+        private double trapFrequency = 0.1;
 
         private const char playerChar = '@';
         private const char wallChar = 'O';
         private const char airChar = '.';
         private const char finishChar = 'F';
         private const char keyChar = 'K';
+        private const char trapChar = '#';
 
         private readonly Dictionary<char, ConsoleColor> colorDictionary = new()
         {
@@ -38,7 +40,8 @@
             {wallChar, ConsoleColor.Yellow},
             {airChar, ConsoleColor.White},
             {finishChar, ConsoleColor.Cyan},
-            {keyChar, ConsoleColor.Green}
+            {keyChar, ConsoleColor.Green},
+            {trapChar, ConsoleColor.Red}
         };
 
         private readonly Dictionary<ConsoleKey, GameInput> inputDictionary = new()
@@ -63,6 +66,9 @@
         private bool allKeysCollected => amountOfCollectedKeys == amountOfKeysToCollect;
 
         private bool gameIsRunning = true;
+
+        private int hp = 10;
+        private const int trapDamage = 1;
 
         public void StartGameLoop()
         {
@@ -95,7 +101,7 @@
             {
                 for (int x = 0; x < fieldDimensionX; x++)
                 {
-                    field[x, y] = TryToCreateWall();
+                    field[x, y] = TryToCreateWallOrTrap();
                 }
             }
 
@@ -132,6 +138,13 @@
                 MovePlayer(newCoords);
 
                 UpdatePlayerOnField();
+
+
+                bool isATrap = AreCoordsATrap(newCoords);
+                if (isATrap)
+                {
+                    TakeDamage(trapDamage);
+                }
             }
             else switch (input)
             {
@@ -160,7 +173,8 @@
             return isWithinField;
         }
 
-        private bool AreCoordsLegal(LabyrinthCoords coords) => GetCharFromField(coords) == airChar;
+        private bool AreCoordsLegal(LabyrinthCoords coords) => GetCharFromField(coords) is airChar or trapChar;
+        private bool AreCoordsATrap(LabyrinthCoords coords) => GetCharFromField(coords) == trapChar;
 
         private void TryToInteractInASquareShape()
         {
@@ -241,16 +255,20 @@
         private void UpdateUi()
         {
             Console.SetCursorPosition(0, fieldDimensionY + 1);
+
+            Console.ForegroundColor = ConsoleColor.DarkCyan;
+            Console.WriteLine($"YOUR CURRENT HP: {hp}".PadRight(Console.WindowWidth - 1));
+
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"\nAMOUNT OF BOMBS: {amountOfBoms}");
+            Console.WriteLine($"AMOUNT OF BOMBS: {amountOfBoms}");
 
             if (amountOfCollectedKeys == amountOfKeysToCollect) Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"\nAMOUNT OF KEYS COLLECTED: {amountOfCollectedKeys} / {amountOfKeysToCollect}");
+            Console.WriteLine($"AMOUNT OF KEYS COLLECTED: {amountOfCollectedKeys} / {amountOfKeysToCollect}");
 
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"\nPress 'Enter' to interact (finishPos)");
-            Console.WriteLine($"Press the 'Spacebar' to use the BOMB!! " +
-                              $"\nIt will explode in interactRadious of 2 (in shape of a square)");
+            Console.WriteLine("Press 'Enter' to interact (finishPos)");
+            Console.WriteLine("Press the 'Spacebar' to use the BOMB!! " +
+                              "\nIt will explode in interactRadious of 2 (in shape of a square)");
         }
 
         private void UpdateField(LabyrinthCoords coords)
@@ -271,22 +289,39 @@
             Console.Write(airChar);
         }
 
-        private char TryToCreateWall()
+        private char TryToCreateWallOrTrap()
         {
             if (random.NextDouble() <= wallFrequency)
             {
-                return wallChar;
+                if (random.NextDouble() <= trapFrequency)
+                    return trapChar;
+                else
+                    return wallChar;
             }
             return airChar;
+        }
+
+        private void TakeDamage(int damage)
+        {
+            hp -= damage;
+            if(hp <= 0) 
+                Die();
         }
         
         private void TryToWin()
         {
             if(!allKeysCollected) return;
             
+            SendConsoleStopMessage("YOU WIN!");
+        }
+        
+        private void Die() => SendConsoleStopMessage("YOU ARE DEAD");
+
+        private void SendConsoleStopMessage(string message)
+        {
             gameIsRunning = false;
             Console.Clear();
-            Console.WriteLine("YOU WIN!");
+            Console.WriteLine(message);
         }
 
         
@@ -305,6 +340,7 @@
             
             return position;
         }
+        
         private LabyrinthCoords CalculateNewPlayerCoordinates(GameInput input) => input switch
         {
             GameInput.MoveUp => new LabyrinthCoords(playerPos.x, playerPos.y - 1),
@@ -313,6 +349,7 @@
             GameInput.MoveRight => new LabyrinthCoords(playerPos.x + 1, playerPos.y),
             _ => throw new NotImplementedException("No correct format of player movement found.")
         };
+        
         private char GetCharFromField(LabyrinthCoords coords) => field[coords.x, coords.y];
     }
 }
