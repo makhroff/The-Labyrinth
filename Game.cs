@@ -1,5 +1,16 @@
 ﻿namespace The_Labyrinth
 {
+    public enum GameInput
+    {
+        Null,
+        MoveUp,
+        MoveDown,
+        MoveLeft,
+        MoveRight,
+        Interact,
+        UseBomb
+    }
+
     public class Game
     {
         private Random random = new();
@@ -40,6 +51,8 @@
             { ConsoleKey.Enter, GameInput.Interact}
         };
 
+        private readonly List<LabyrinthCoords> usedCoordsList = new();
+
         private const int interactRadious = 1;
         private const int bombExplosionRadious = 2;
         
@@ -72,8 +85,6 @@
             playerOldPos = playerPos;
             finishPos = GetRandomPosition();
             keyPos = GetRandomPosition();
-
-            if (keyPos == finishPos || keyPos == playerPos) keyPos = GetRandomPosition();
         }
 
         private void InitField()
@@ -96,7 +107,6 @@
         private void GenerateNewKey()
         {
             keyPos = GetRandomPosition();
-            if (keyPos == finishPos || keyPos == playerPos) keyPos = GetRandomPosition();
 
             field[keyPos.x, keyPos.y] = keyChar;
 
@@ -179,6 +189,8 @@
 
         private void CollectKey(int x, int y, LabyrinthCoords intermediateCoords)
         {
+            usedCoordsList.Remove(keyPos);
+            
             field[x, y] = airChar;
             UpdateField(intermediateCoords);
 
@@ -238,7 +250,8 @@
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"\nPress 'Enter' to interact (finishPos)");
-            Console.WriteLine($"Press the 'Spacebar' to use the BOMB!! \nIt will explode in interactRadious of 2 (in shape of a square)");
+            Console.WriteLine($"Press the 'Spacebar' to use the BOMB!! " +
+                              $"\nIt will explode in interactRadious of 2 (in shape of a square)");
         }
 
         private void UpdateField(LabyrinthCoords coords)
@@ -278,15 +291,19 @@
             Console.WriteLine("YOU WIN!");
         }
 
-
-
+        
         private LabyrinthCoords GetRandomPosition()
         {
             LabyrinthCoords position = new LabyrinthCoords
             {
-                x = random.Next(0, fieldDimensionX - 1),
-                y = random.Next(0, fieldDimensionY - 1)
+                x = random.Next(0, fieldDimensionX),
+                y = random.Next(0, fieldDimensionY)
             };
+
+            if (usedCoordsList.Contains(position))
+                return GetRandomPosition();
+            else
+                usedCoordsList.Add(position);
             
             return position;
         }

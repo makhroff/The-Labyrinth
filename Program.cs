@@ -1,21 +1,10 @@
 ﻿namespace The_Labyrinth
 {
-    public enum GameInput
-    {
-        Null = 0,
-        MoveUp = 1,
-        MoveDown = 2,
-        MoveLeft = 3,
-        MoveRight = 4,
-        Interact = 5,
-        UseBomb = 6,
-    }
-
     static class Program
     {
         static Game game = new Game();
 
-        static void Main(string[] args)
+        static void Main()
         {
             SetupConsoleParams();
 
