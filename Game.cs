@@ -67,7 +67,7 @@
         private int amountOfBoms = 5;
 
         private const int amountOfChestsToSpawn = 5;
-        private const int maxBombsToAdd = 3;
+        private const int maxBombsToAdd = 5;
 
         private const int amountOfKeysToCollect = 5;
         private int amountOfCollectedKeys;
@@ -85,6 +85,7 @@
             InitStartPositions();
             InitField();
             DrawField();
+            DrawAllHints();
 
             while (gameIsRunning)
             {
@@ -180,9 +181,10 @@
 
         private void MovePlayer(LabyrinthCoords newCoords)
         {
-            field[playerPos.x, playerPos.y] = airChar;
             playerOldPos = playerPos;
             playerPos = newCoords;
+            field[playerOldPos.x, playerOldPos.y] = airChar;
+            field[playerPos.x, playerPos.y] = playerChar;
         }
 
         private static bool AreCoordsWithinField(LabyrinthCoords coords)
@@ -229,7 +231,7 @@
         {
             CollectAnInteractable(coords);
             
-            var bombsToAdd = random.Next(0, maxBombsToAdd);
+            var bombsToAdd = random.Next(1, maxBombsToAdd);
             
             AddBombs(bombsToAdd);
         }
@@ -297,17 +299,28 @@
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.WriteLine($"YOUR CURRENT HP: {hp}".PadRight(Console.WindowWidth - 1));
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"AMOUNT OF BOMBS: {amountOfBoms}");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine($"\nAMOUNT OF BOMBS: {amountOfBoms}");
 
             if (amountOfCollectedKeys == amountOfKeysToCollect)
                 Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine($"AMOUNT OF KEYS COLLECTED: {amountOfCollectedKeys} / {amountOfKeysToCollect}");
+        }
 
+        private void DrawAllHints()
+        {
+            Console.SetCursorPosition(0, fieldDimensionY + 5);
+            
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Press 'Enter' to interact (finishPos)");
-            Console.WriteLine("Press the 'Spacebar' to use the BOMB!! " +
-                              "\nIt will explode in interactRadious of 2 (in shape of a square)");
+            Console.WriteLine($"\n=-=-=-=-=-=-=-=-=-=-=-=-= HINTS =-=-=-=-=-=-=-=-=-=-=-=-=\n" +
+                              $"\nTo move your character, use keyboard arrows." +
+                              $"\nPress 'Enter' to interact (finish, keys, chests)" +
+                              $"\nPress the 'Spacebar' to use the BOMB!! It will explode in radious of 2 (in shape of a square)" +
+                              $"\nChests ({chestChar}) drops bombs! (random amount between 1 and {maxBombsToAdd})" +
+                              $"\nCollect all keys ({keyChar}) to have a chance to escape the Labyrinth" +
+                              $"\nWhen all keys collected, go to the finish ({finishChar})!" +
+                              $"\nBEWARE OF TRAPS!!! ({trapChar})" +
+                              $"\nIf your health drops to 0, YOU WILL DIE.");
         }
 
         private void UpdateField(LabyrinthCoords coords)
@@ -319,13 +332,8 @@
 
         private void UpdatePlayerOnField()
         {
-            Console.ForegroundColor = colorDictionary[playerChar];
-            Console.SetCursorPosition(playerPos.x, playerPos.y);
-            Console.Write(playerChar);
-
-            Console.ForegroundColor = colorDictionary[airChar];
-            Console.SetCursorPosition(playerOldPos.x, playerOldPos.y);
-            Console.Write(airChar);
+            UpdateField(playerPos);
+            UpdateField(playerOldPos);
         }
 
         private char TryToCreateWallOrTrap()
