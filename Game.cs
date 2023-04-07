@@ -175,6 +175,9 @@
             if (AreCoordsATrap(newCoords))
                 TakeDamage(trapDamage);
 
+            if (!gameIsRunning)
+                return;
+
             MovePlayer(newCoords);
             UpdatePlayerOnField();
         }
