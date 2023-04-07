@@ -13,6 +13,8 @@
 
     public class Game
     {
+        #region Variables
+        
         private Random random = new();
 
         private const int fieldDimensionY = 35;
@@ -75,6 +77,8 @@
 
         private int hp = 10;
         private const int trapDamage = 1;
+        
+        #endregion
 
         public void StartGameLoop()
         {
@@ -86,8 +90,8 @@
             {
                 UpdateUi();
 
-                var input = CatchGameInput();
-                ProcessCachedInput(input);
+                var input = GetGameInput();
+                ProcessInput(input);
             }
         }
 
@@ -136,10 +140,10 @@
             UpdateField(keyPos);
         }
 
-        private GameInput CatchGameInput() =>
+        private GameInput GetGameInput() =>
             inputDictionary.TryGetValue(Console.ReadKey().Key, out var input) ? input : GameInput.Null;
 
-        private void ProcessCachedInput(GameInput input)
+        private void ProcessInput(GameInput input)
         {
             var playerIsMoving = input.IsMoving();
 
@@ -359,7 +363,6 @@
             Console.Clear();
             Console.WriteLine(message);
         }
-
         
         private LabyrinthCoords GetRandomPosition()
         {
