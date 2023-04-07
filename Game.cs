@@ -172,11 +172,11 @@
             if (!AreCoordsLegal(newCoords))
                 return;
 
-            MovePlayer(newCoords);
-            UpdatePlayerOnField();
-
             if (AreCoordsATrap(newCoords))
                 TakeDamage(trapDamage);
+
+            MovePlayer(newCoords);
+            UpdatePlayerOnField();
         }
 
         private void MovePlayer(LabyrinthCoords newCoords)
