@@ -22,6 +22,7 @@
         private LabyrinthCoords playerOldPos = new();
         private LabyrinthCoords finishPos = new();
         private LabyrinthCoords keyPos = new();
+        private LabyrinthCoords[] chestsPos = new LabyrinthCoords[amountOfChestsToSpawn];
 
         private char[,] field = new char[fieldDimensionX, fieldDimensionY];
         private double wallFrequency = 0.5;
@@ -33,6 +34,7 @@
         private const char finishChar = 'F';
         private const char keyChar = 'K';
         private const char trapChar = '#';
+        private const char chestChar = 'X';
 
         private readonly Dictionary<char, ConsoleColor> colorDictionary = new()
         {
@@ -41,7 +43,8 @@
             {airChar, ConsoleColor.White},
             {finishChar, ConsoleColor.Cyan},
             {keyChar, ConsoleColor.Green},
-            {trapChar, ConsoleColor.Red}
+            {trapChar, ConsoleColor.Red},
+            {chestChar, ConsoleColor.Blue}
         };
 
         private readonly Dictionary<ConsoleKey, GameInput> inputDictionary = new()
@@ -60,6 +63,9 @@
         private const int bombExplosionRadious = 2;
         
         private int amountOfBoms = 5;
+
+        private const int amountOfChestsToSpawn = 5;
+        private const int maxBombsToAdd = 3;
 
         private const int amountOfKeysToCollect = 5;
         private int amountOfCollectedKeys;
@@ -91,6 +97,11 @@
             playerOldPos = playerPos;
             finishPos = GetRandomPosition();
             keyPos = GetRandomPosition();
+
+            for (int i = 0; i < amountOfChestsToSpawn; i++)
+            {
+                chestsPos[i] = GetRandomPosition();
+            }
         }
 
         private void InitField()
@@ -108,6 +119,12 @@
             field[playerPos.x, playerPos.y] = playerChar;
             field[finishPos.x, finishPos.y] = finishChar;
             field[keyPos.x, keyPos.y] = keyChar;
+
+            for (int i = 0; i < amountOfChestsToSpawn; i++)
+            {
+                var chestPos = chestsPos[i];
+                field[chestPos.x, chestPos.y] = chestChar;
+            }
         }
 
         private void GenerateNewKey()
@@ -128,23 +145,7 @@
 
             if (playerIsMoving)
             {
-                var newCoords = CalculateNewPlayerCoordinates(input);
-
-                if (!AreCoordsWithinField(newCoords))
-                    return;
-                if (!AreCoordsLegal(newCoords))
-                    return;
-
-                MovePlayer(newCoords);
-
-                UpdatePlayerOnField();
-
-
-                bool isATrap = AreCoordsATrap(newCoords);
-                if (isATrap)
-                {
-                    TakeDamage(trapDamage);
-                }
+                TryToMovePlayer(input);
             }
             else switch (input)
             {
@@ -155,6 +156,22 @@
                     TryToUseBomb();
                     break;
             }
+        }
+
+        private void TryToMovePlayer(GameInput input)
+        {
+            var newCoords = CalculateNewPlayerCoordinates(input);
+
+            if (!AreCoordsWithinField(newCoords))
+                return;
+            if (!AreCoordsLegal(newCoords))
+                return;
+
+            MovePlayer(newCoords);
+            UpdatePlayerOnField();
+
+            if (AreCoordsATrap(newCoords))
+                TakeDamage(trapDamage);
         }
 
         private void MovePlayer(LabyrinthCoords newCoords)
@@ -169,8 +186,7 @@
             LabyrinthCoords minCoords = new LabyrinthCoords(-1, -1);
             LabyrinthCoords maxCoords = new LabyrinthCoords(fieldDimensionX, fieldDimensionY);
 
-            bool isWithinField = coords > minCoords && coords < maxCoords;
-            return isWithinField;
+            return coords > minCoords && coords < maxCoords;
         }
 
         private bool AreCoordsLegal(LabyrinthCoords coords) => GetCharFromField(coords) is airChar or trapChar;
@@ -194,24 +210,40 @@
                             break;
                         
                         case keyChar:
-                            CollectKey(x, y, intermediateCoords);
+                            CollectKey(intermediateCoords);
+                            break;
+
+                        case chestChar:
+                            CollectChest(intermediateCoords);
                             break;
                     }
                 }
             }
         }
 
-        private void CollectKey(int x, int y, LabyrinthCoords intermediateCoords)
+        private void CollectChest(LabyrinthCoords coords)
         {
-            usedCoordsList.Remove(keyPos);
+            CollectAnInteractable(coords);
             
-            field[x, y] = airChar;
-            UpdateField(intermediateCoords);
+            var bombsToAdd = random.Next(0, maxBombsToAdd);
+            
+            AddBombs(bombsToAdd);
+        }
+        private void CollectKey(LabyrinthCoords coords)
+        {
+            CollectAnInteractable(coords);
 
             amountOfCollectedKeys++;
 
             if (amountOfKeysToCollect > amountOfCollectedKeys)
                 GenerateNewKey();
+        }
+        
+        private void CollectAnInteractable(LabyrinthCoords coords)
+        {
+            usedCoordsList.Remove(coords);
+            field[coords.x, coords.y] = airChar;
+            UpdateField(coords);
         }
 
         private void TryToUseBomb()
@@ -224,7 +256,9 @@
                 for (int x = (playerPos.x - bombExplosionRadious); x < (playerPos.x + bombExplosionRadious + 1); x++)
                 {
                     var intermediateCoords = new LabyrinthCoords(x, y);
-                    if (!AreCoordsWithinField(intermediateCoords)) continue;
+                    
+                    if (!AreCoordsWithinField(intermediateCoords))
+                        continue;
 
                     if (field[x, y] is wallChar or trapChar)
                     {
@@ -262,7 +296,8 @@
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"AMOUNT OF BOMBS: {amountOfBoms}");
 
-            if (amountOfCollectedKeys == amountOfKeysToCollect) Console.ForegroundColor = ConsoleColor.Yellow;
+            if (amountOfCollectedKeys == amountOfKeysToCollect)
+                Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine($"AMOUNT OF KEYS COLLECTED: {amountOfCollectedKeys} / {amountOfKeysToCollect}");
 
             Console.ForegroundColor = ConsoleColor.Green;
@@ -310,7 +345,8 @@
         
         private void TryToWin()
         {
-            if(!allKeysCollected) return;
+            if(!allKeysCollected)
+                return;
             
             SendConsoleStopMessage("YOU WIN!");
         }
@@ -351,5 +387,7 @@
         };
         
         private char GetCharFromField(LabyrinthCoords coords) => field[coords.x, coords.y];
+
+        private void AddBombs(int amountToAdd) => amountOfBoms += amountToAdd;
     }
 }
