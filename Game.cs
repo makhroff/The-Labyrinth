@@ -24,8 +24,8 @@
         private LabyrinthCoords keyPos = new();
 
         private char[,] field = new char[fieldDimensionX, fieldDimensionY];
-        private double wallFrequency = 0.3;
-        private double trapFrequency = 0.1;
+        private double wallFrequency = 0.5;
+        private double trapFrequencyWithinWalls = 0.3;
 
         private const char playerChar = '@';
         private const char wallChar = 'O';
@@ -226,7 +226,7 @@
                     var intermediateCoords = new LabyrinthCoords(x, y);
                     if (!AreCoordsWithinField(intermediateCoords)) continue;
 
-                    if (field[x, y] == wallChar)
+                    if (field[x, y] is wallChar or trapChar)
                     {
                         field[x, y] = airChar;
                         UpdateField(intermediateCoords);
@@ -293,7 +293,7 @@
         {
             if (random.NextDouble() <= wallFrequency)
             {
-                if (random.NextDouble() <= trapFrequency)
+                if (random.NextDouble() <= trapFrequencyWithinWalls)
                     return trapChar;
                 else
                     return wallChar;
