@@ -172,7 +172,7 @@
             if (!AreCoordsLegal(newCoords))
                 return;
 
-            if (AreCoordsATrap(newCoords))
+            if (GetCharFromField(newCoords) == trapChar)
                 TakeDamage(trapDamage);
 
             if (!gameIsRunning)
@@ -199,7 +199,6 @@
         }
 
         private bool AreCoordsLegal(LabyrinthCoords coords) => GetCharFromField(coords) is airChar or trapChar;
-        private bool AreCoordsATrap(LabyrinthCoords coords) => GetCharFromField(coords) == trapChar;
 
         private void TryToInteractInASquareShape()
         {
@@ -360,10 +359,8 @@
         
         private void TryToWin()
         {
-            if(!allKeysCollected)
-                return;
-            
-            SendConsoleStopMessage("YOU WIN!");
+            if(allKeysCollected)
+                SendConsoleStopMessage("YOU WIN!");
         }
         
         private void Die() => SendConsoleStopMessage("YOU ARE DEAD");
